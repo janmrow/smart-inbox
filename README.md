@@ -36,15 +36,25 @@ Each feature commit should add one visible capability to the working system and 
 
 ## Status
 
-Project definition.
+Email echo: each run replies to one unread message from one configured sender in a dedicated Gmail account. Other unread messages stay unread. AI comes later.
 
-The first working milestone is deliberately simple:
+Create a local `.env` file with the dedicated Gmail address and its [App Password](https://support.google.com/mail/answer/185833):
 
-```text
-send email → receive it on the VPS → send a reply
+```dotenv
+SMART_INBOX_EMAIL=your-address@gmail.com
+SMART_INBOX_APP_PASSWORD=your-app-password
+SMART_INBOX_ALLOWED_SENDER=your-other-address@example.com
 ```
 
-AI comes after that loop works.
+The `.env` file is ignored by Git. After `uv sync`, send a plain-text email from the allowed address to the Gmail account and run:
+
+```sh
+uv run --env-file .env python -m smart_inbox
+```
+
+After sending the reply and marking that incoming message as read, the command prints `Echo reply sent`. Check that the reply arrives in the sender's inbox and that an unread message from another sender stays unread. If there is no unread message from the allowed sender, it prints `No unread messages from allowed sender`.
+
+This is a one-shot manual flow. If the allowed sender has older unread messages, the oldest is processed first. Multiple senders and duplicate protection are later steps.
 
 ## Documentation
 
