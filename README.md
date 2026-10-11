@@ -1,42 +1,57 @@
 # Smart Inbox
 
-Smart Inbox is a small personal AI assistant that turns incoming questions into concise, useful answers.
+Smart Inbox is a personal consultation inbox being built around multiple AI models. You email a question, problem, or topic; the system chooses how much analysis, research, and model collaboration it needs and returns one coherent, useful answer.
 
-Email is the first interface because it is simple, universal, and easy to test end-to-end. The interesting part of the project is the workflow behind it: decide how a question should be handled, optionally research it, and produce a good answer with an LLM.
+**Simple interface. Adaptive intelligence underneath. One valuable answer at the end.**
+
+## Intended workflow
 
 ```text
 email
-  ↓
-decision
-  ↓
-optional research
-  ↓
-LLM
-  ↓
-reply
+  → understand the problem and its knowledge needs
+  → choose the depth of work, models, and tools
+  → research, analyze, and critique as needed
+  → synthesize one consultation
+  → email reply
 ```
+
+This is the product direction. The current application implements the email echo described below.
+
+The user does not choose a model or working mode. A simple question may need one model; a difficult question may benefit from sources, complementary model analyses, and critical synthesis. The answer should make relevant uncertainty, tradeoffs, risks, and next steps clear without exposing internal orchestration.
 
 ## Why
 
-This project is a practical playground for:
+The project explores a practical question: **How can a small AI system decide how much intelligence to use for a particular problem?**
 
-- modern AI workflows;
-- testing systems that include probabilistic components;
-- web research and LLM integration;
-- data flow, privacy, and basic information security;
-- running a small service on a VPS.
+It is a laboratory for problem recognition, adaptive effort, model roles, research, and answer quality, with cost, time, privacy, and reliability considered together. Additional calls or longer answers must earn their place through useful results.
 
-The goal is not to build an AI platform. The goal is to keep the whole system small enough to understand, test, debug, and improve.
+Email remains the only primary interface. Mikrus is the intended production environment; deployment is a later step. The project should stay small enough to understand, test, debug, and improve.
 
-## Development approach
+## Current status
 
-Smart Inbox is built as a sequence of small vertical slices.
+Email echo is implemented for one dedicated Gmail account and one configured sender. Each run replies to at most one matching unread message. Other messages stay unread. There are no model calls, research, adaptive routing, or deployment files yet.
 
-Each feature commit should add one visible capability to the working system and remain easy to test manually end-to-end. New abstractions or infrastructure are added only when the current system gives a concrete reason for them.
+The implementation fetches messages without marking them read, checks the exact parsed `From` address, sends a threaded reply, and marks the incoming message read after SMTP succeeds. Address filtering is not complete sender authentication. If sending succeeds but marking the message fails, a later run may send another reply; duplicate protection and bounded failure handling are planned.
 
-## Status
+Automated tests cover reply construction and sender filtering. They do not establish real Gmail delivery; see [PLAN.md](PLAN.md) for verification status and the next proposed work.
 
-Email echo: each run replies to one unread message from one configured sender in a dedicated Gmail account. Other unread messages stay unread. AI comes later.
+## Local development
+
+Use Python 3.12 or later and `uv`. Install the project and development dependencies:
+
+```sh
+uv sync
+```
+
+Run the repository checks:
+
+```sh
+make verify
+```
+
+This runs Ruff linting, Ruff formatting checks, and pytest without contacting the mailbox or AI providers.
+
+## Manual email echo check
 
 Create a local `.env` file with the dedicated Gmail address and its [App Password](https://support.google.com/mail/answer/185833):
 
@@ -46,20 +61,35 @@ SMART_INBOX_APP_PASSWORD=your-app-password
 SMART_INBOX_ALLOWED_SENDER=your-other-address@example.com
 ```
 
-The `.env` file is ignored by Git. After `uv sync`, send a plain-text email from the allowed address to the Gmail account and run:
+The `.env` file is ignored by Git. Keep it private.
 
-```sh
-uv run --env-file .env python -m smart_inbox
-```
+Use a dedicated test mailbox. The command processes the oldest matching unread message first, so check for older messages from the allowed sender before expecting your new test message to be selected.
 
-After sending the reply and marking that incoming message as read, the command prints `Echo reply sent`. Check that the reply arrives in the sender's inbox and that an unread message from another sender stays unread. If there is no unread message from the allowed sender, it prints `No unread messages from allowed sender`.
+1. Send a plain-text email from the allowed address with a recognizable subject and body.
+2. Leave a test email from a different sender unread in the same mailbox.
+3. Run:
 
-This is a one-shot manual flow. If the allowed sender has older unread messages, the oldest is processed first. Multiple senders and duplicate protection are later steps.
+   ```sh
+   uv run --env-file .env python -m smart_inbox
+   ```
+
+4. Confirm that the allowed sender receives a reply containing `You wrote: ...`, the reply belongs to the original thread, and the handled message becomes read.
+5. Confirm that the message from the other sender remains unread and receives no reply.
+
+After a successful run, the command prints `Echo reply sent`. If no eligible unread message is found, it prints `No unread messages from allowed sender`. This is a one-shot flow; it does not poll continuously.
+
+## Development approach
+
+Build small, working vertical slices. One feature commit should add one meaningful capability and remain easy to check through a real email exchange. Add abstractions and infrastructure only when the current task gives a concrete reason.
+
+The earlier product direction remains in Git history. The current specification defines adaptive consultation; the roadmap describes how to reach it from the existing email loop.
 
 ## Documentation
 
-- [`SPEC.md`](SPEC.md) — product scope and delivery sequence.
-- [`AGENTS.md`](AGENTS.md) — rules for agent-assisted development.
+- [SPEC.md](SPEC.md) — product identity, scope, answer quality, and completion criteria.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — current implementation, data flow, and design boundaries.
+- [PLAN.md](PLAN.md) — delivery status, next proposed step, and verification criteria.
+- [AGENTS.md](AGENTS.md) — workflow and scope rules for coding agents.
 
 ## License
 
